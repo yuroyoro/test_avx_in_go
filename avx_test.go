@@ -27,12 +27,12 @@ Hardware:
       Hardware UUID: 249473D1-1C18-536A-9B95-DCE616DE5749
 
 $ go test -benchmem -bench=.
-
 testing: warning: no tests to run
 PASS
-BenchmarkAvxAdd  5000000               388 ns/op               0 B/op          0 allocs/op
-BenchmarkGoAdd   1000000              1971 ns/op               0 B/op          0 allocs/op
-ok      github.com/yuroyoro/test_avx_in_go      4.346s
+BenchmarkAvxAdd  3000000               415 ns/op               0 B/op          0 allocs/op
+BenchmarkNonAlignedAvxAdd        1000000              1143 ns/op               0 B/op          0 allocs/op
+BenchmarkGoAdd   1000000              2059 ns/op               0 B/op          0 allocs/op
+ok      github.com/yuroyoro/test_avx_in_go      4.914s
 */
 
 func BenchmarkAvxAdd(b *testing.B) {
@@ -40,6 +40,10 @@ func BenchmarkAvxAdd(b *testing.B) {
 	x := mmMalloc(size)
 	y := mmMalloc(size)
 	z := mmMalloc(size)
+
+	defer mmFree(x)
+	defer mmFree(y)
+	defer mmFree(z)
 
 	for i := 0; i < size; i++ {
 		x[i] = float32(i) * 0.1
@@ -54,6 +58,28 @@ func BenchmarkAvxAdd(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		avxAdd(size, x, y, z)
+	}
+
+}
+func BenchmarkNonAlignedAvxAdd(b *testing.B) {
+
+	x := make([]float32, size)
+	y := make([]float32, size)
+	z := make([]float32, size)
+
+	for i := 0; i < size; i++ {
+		x[i] = float32(i) * 0.1
+	}
+	for i := 0; i < size; i++ {
+		y[i] = float32(i+1) * 0.2
+	}
+	for i := 0; i < size; i++ {
+		z[i] = 0.0
+	}
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		avxAddu(size, x, y, z)
 	}
 
 }

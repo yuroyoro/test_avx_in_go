@@ -20,6 +20,20 @@ void avx_add(const size_t n, float *x, float *y, float *z)
     vz[i] = _mm256_add_ps(vx[i], vy[i]); //AVX を用いる SIMD 演算
 	}
 }
+
+void avx_addu(const size_t n, float *x, float *y, float *z)
+{
+	static const size_t single_size = 8; //単精度は8つずつ計算
+	const size_t end = n / single_size;
+
+  for(size_t i=0; i<end; ++i) {
+		__m256 mx = _mm256_loadu_ps(&x[i]);
+		__m256 my = _mm256_loadu_ps(&y[i]);
+
+    __m256 mz = _mm256_add_ps(mx, my);
+		_mm256_storeu_ps(&z[i], mz);
+	}
+}
 */
 import "C"
 import (
@@ -43,6 +57,14 @@ func mmMalloc(size int) []float32 {
 	return goSlice
 }
 
+func mmFree(v []float32) {
+	C._mm_free(unsafe.Pointer(&v[0]))
+}
+
 func avxAdd(size int, x, y, z []float32) {
 	C.avx_add((C.size_t)(size), (*C.float)(&x[0]), (*C.float)(&y[0]), (*C.float)(&z[0]))
+}
+
+func avxAddu(size int, x, y, z []float32) {
+	C.avx_addu((C.size_t)(size), (*C.float)(&x[0]), (*C.float)(&y[0]), (*C.float)(&z[0]))
 }
